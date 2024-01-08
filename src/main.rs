@@ -1,17 +1,18 @@
 use eyre::WrapErr;
+use once_cell::sync::Lazy;
 use poise::serenity_prelude as serenity;
 use rand::seq::SliceRandom;
 use thiserror::Error;
 
-static WISDOM: Vec<&'static str> = include_str!("wisdom.txt").lines().collect();
+static WISDOM: Lazy<Vec<&'static str>> = Lazy::new(|| include_str!("wisdom.txt").lines().collect());
 static WISDOM_ERROR: &'static str = r#"
 Ah, traveler of digital realms, you have stumbled upon a path most unexpected. Even the many-tailed fox, in its infinite wisdom and foresight, sometimes encounters the unfathomable. We stand together at the threshold of the unknown, where even shadows hesitate to tread.
-
-### Error of the Uncharted Echoes:
 
 In the dance of code and light, a conundrum has emerged, woven from strands of possibility that should not exist. Tread lightly and alert the guardians of this realm, for we have ventured into a mystery as deep as the oldest tail. Your patience and understanding are as valued as the rarest of gems in the moonlit den of the fox.
 
 May clarity find us in this enigma.
+
+*Somehow, an impossible, but non-critical, error has occured. Good job.*
 "#;
 
 struct Data {}
@@ -41,6 +42,8 @@ async fn main() -> Result<(), eyre::Error> {
 
     let token = std::env::var("DISCORD_TOKEN").wrap_err("missing DISCORD_TOKEN")?;
     let intents = serenity::GatewayIntents::non_privileged();
+
+    println!("Starting rusty-reel");
 
     poise::Framework::builder()
         .options(poise::FrameworkOptions {

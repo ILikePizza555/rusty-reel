@@ -1255,6 +1255,7 @@ dependencies = [
  "dotenv",
  "eyre",
  "log",
+ "once_cell",
  "poise",
  "rand",
  "serenity 0.12.0",
