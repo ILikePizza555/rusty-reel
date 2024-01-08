@@ -37,6 +37,8 @@ async fn wisdom(ctx: Context<'_>) -> Result<(), RustyReelError> {
 
 #[tokio::main]
 async fn main() -> Result<(), eyre::Error> {
+    dotenv::dotenv()?;
+
     let token = std::env::var("DISCORD_TOKEN").wrap_err("missing DISCORD_TOKEN")?;
     let intents = serenity::GatewayIntents::non_privileged();
 
