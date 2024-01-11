@@ -19,6 +19,8 @@
                     buildInputs = with pkgs; [
                         nixd
                         rust
+                        pkg-config
+                        openssl
                     ];
                 };
             }

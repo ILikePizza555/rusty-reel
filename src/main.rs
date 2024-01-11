@@ -1,6 +1,8 @@
+mod dearrow_api;
+
 use eyre::WrapErr;
 use once_cell::sync::Lazy;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity};
 use rand::seq::SliceRandom;
 use thiserror::Error;
 
@@ -14,6 +16,7 @@ May clarity find us in this enigma.
 
 *Somehow, an impossible, but non-critical, error has occured. Good job.*
 "#;
+
 
 struct Data {}
 
@@ -36,18 +39,23 @@ async fn wisdom(ctx: Context<'_>) -> Result<(), RustyReelError> {
     Ok(())
 }
 
+#[poise::command(slash_command, prefix_command)]
+async fn dearrow_link(ctx: Context<'_>, url: String) -> Result<(), RustyReelError> {
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), eyre::Error> {
     dotenv::dotenv()?;
 
     let token = std::env::var("DISCORD_TOKEN").wrap_err("missing DISCORD_TOKEN")?;
-    let intents = serenity::GatewayIntents::non_privileged();
+    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
     println!("Starting rusty-reel");
 
     poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![wisdom()],
+            commands: vec![wisdom(), dearrow_link()],
             ..Default::default()
         })
         .token(token)
