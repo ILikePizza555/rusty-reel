@@ -1,13 +1,66 @@
 use log::{debug, info};
+use reqwest::Client;
+use serde::{Serialize, Deserialize};
 use thiserror::Error;
+use uuid::Uuid;
+
+static DEARROW_BRANDING_API: &'static str = "https://sponsor.ajay.app/api/branding";
 
 #[derive(Error, Debug)]
 pub enum DeArrowApiError {
     #[error("Error: `{0}` is not a valid youtube url or video ID")]
     VideoIdParseError(String),
+    #[error("Error sending request")]
+    ReqwestError(#[from] reqwest::Error)
 }
 
+#[derive(Serialize)]
 pub struct VideoId<'a> (&'a str);
+
+#[derive(Deserialize)]
+pub struct TitleResponse {
+    title: String,
+    original: bool,
+    votes: u64,
+    locked: bool,
+    uuid: Uuid
+}
+
+#[derive(Deserialize)]
+pub struct ThumbnailResponse {
+    timestamp: Option<u64>,
+    original: bool,
+    votes: u64,
+    locked: bool,
+    uuid: Uuid
+}
+
+#[derive(Deserialize)]
+pub struct BrandingResponse {
+    titles: Vec<TitleResponse>,
+    thumbnails: Vec<ThumbnailResponse>,
+    random_time: u64,
+    video_duration: Option<u64>
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BrandingRequest<'a> {
+    video_id: VideoId<'a>,
+    service: Option<String>,
+    return_user_id: bool
+}
+
+impl <'a> BrandingRequest<'a> {
+    async fn send(&self, client: &Client) -> Result<BrandingResponse, DeArrowApiError> {
+        Ok(client.get(DEARROW_BRANDING_API)
+            .json(self)
+            .send()
+            .await?
+            .json::<BrandingResponse>()
+            .await?)
+    }
+}
 
 impl <'a> TryFrom<&'a str> for VideoId<'a> {
     type Error = DeArrowApiError;
