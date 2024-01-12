@@ -52,6 +52,14 @@ pub struct BrandingRequest<'a> {
 }
 
 impl <'a> BrandingRequest<'a> {
+    fn new(video_id: VideoId<'a>) -> Self {
+        BrandingRequest {
+            video_id,
+            service: None,
+            return_user_id: false
+        }
+    }
+
     async fn send(&self, client: &Client) -> Result<BrandingResponse, DeArrowApiError> {
         Ok(client.get(DEARROW_BRANDING_API)
             .json(self)
