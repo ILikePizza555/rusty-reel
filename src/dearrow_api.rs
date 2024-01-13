@@ -1,7 +1,7 @@
-use log::{debug, info};
 use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
+use tracing::{debug, info};
 use uuid::Uuid;
 
 static DEARROW_BRANDING_API: &'static str = "https://sponsor.ajay.app/api/branding";
@@ -14,10 +14,7 @@ pub enum DeArrowApiError {
     ReqwestError(#[from] reqwest::Error)
 }
 
-#[derive(Serialize)]
-pub struct VideoId<'a> (&'a str);
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TitleResponse {
     title: String,
     original: bool,
@@ -26,7 +23,7 @@ pub struct TitleResponse {
     uuid: Uuid
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ThumbnailResponse {
     timestamp: Option<u64>,
     original: bool,
@@ -35,7 +32,7 @@ pub struct ThumbnailResponse {
     uuid: Uuid
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct BrandingResponse {
     titles: Vec<TitleResponse>,
     thumbnails: Vec<ThumbnailResponse>,
@@ -43,7 +40,7 @@ pub struct BrandingResponse {
     video_duration: Option<u64>
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct BrandingRequest<'a> {
     video_id: VideoId<'a>,
@@ -61,14 +58,21 @@ impl <'a> BrandingRequest<'a> {
     }
 
     async fn send(&self, client: &Client) -> Result<BrandingResponse, DeArrowApiError> {
-        Ok(client.get(DEARROW_BRANDING_API)
+        debug!(target: "dearrow_api", "Sending {:?} to {:?}", self, DEARROW_BRANDING_API);
+        
+        let res = client.get(DEARROW_BRANDING_API)
             .json(self)
             .send()
-            .await?
-            .json::<BrandingResponse>()
-            .await?)
+            .await?;
+
+        info!(target: "dearrow_api", "Response: {:#?}", res);
+
+        Ok(res.json::<BrandingResponse>().await?)
     }
 }
+
+#[derive(Serialize, Debug)]
+pub struct VideoId<'a> (&'a str);
 
 impl <'a> TryFrom<&'a str> for VideoId<'a> {
     type Error = DeArrowApiError;
@@ -108,15 +112,40 @@ impl <'a> TryFrom<&'a str> for VideoId<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{DeArrowApiError, VideoId};
+    use reqwest::Client;
+    use test_log::test;
+
+    use super::{DeArrowApiError, VideoId, BrandingRequest};
 
     #[test]
     fn full_youtube_url_into_video_id() -> Result<(), DeArrowApiError> {
-        VideoId::try_from("https://www.youtube.com/watch?v=oBnCgu7bdQk").and(Ok(()))
+        let vid = VideoId::try_from("https://www.youtube.com/watch?v=oBnCgu7bdQk")?;
+        assert_eq!(vid.0, "oBnCgu7bdQk");
+        Ok(())
     }
 
     #[test]
     fn short_youtube_url_into_video_id() -> Result<(), DeArrowApiError> {
-        VideoId::try_from("https://youtu.be/_u6f9beKbwg?si=cQn5mAT_Q5pusqRy").and(Ok(()))
+        let vid = VideoId::try_from("https://youtu.be/_u6f9beKbwg?si=cQn5mAT_Q5pusqRy")?;
+        assert_eq!(vid.0, "_u6f9beKbwg");
+        Ok(())
+    }
+
+    #[test]
+    fn normal_video_id() -> Result<(), DeArrowApiError> {
+        let vid = VideoId::try_from("7sAxhu04SlM")?;
+        assert_eq!(vid.0, "7sAxhu04SlM");
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    async fn test_send_branding_rquest() -> Result<(), DeArrowApiError> {
+        let client = Client::new();
+        let req = BrandingRequest::new(VideoId::try_from("https://www.youtube.com/watch?v=imptKC2WKY4&t=142s")?);
+
+        let res = req.send(&client).await?;
+
+
+        Ok(())
     }
 }

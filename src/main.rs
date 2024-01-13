@@ -53,22 +53,24 @@ async fn main() -> Result<(), eyre::Error> {
 
     println!("Starting rusty-reel");
 
-    poise::Framework::builder()
+    let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![wisdom(), dearrow_link()],
             ..Default::default()
         })
-        .token(token)
-        .intents(intents)
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {})
             })
         })
-        .run()
-        .await
-        .wrap_err("Failed to start client!")?;
+        .build();
+
+    serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .await?
+        .start()
+        .await?;
 
     Ok(())
 }
